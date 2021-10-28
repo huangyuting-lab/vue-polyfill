@@ -51,6 +51,23 @@ function reactive(target) {
   return new Proxy(target, handler);
 }
 
+function ref(raw) {
+  console.log("start ref");
+  const r = {
+    get value() {
+      console.log("start ref get", r, raw);
+      track(r, "value");
+      return raw;
+    },
+    set value(newVal) {
+      console.log("start ref set", r, raw, newVal);
+      raw = newVal;
+      trigger(r, "value");
+    },
+  };
+  return r;
+}
+
 function effect(eff) {
   console.log("start activeEffect");
   activeEffect = eff;
@@ -59,32 +76,32 @@ function effect(eff) {
 }
 
 let product = reactive({ price: 5, quantity: 2 });
+let salePrice = ref(0);
 let total = 0;
-let salePrice = 0;
 
 effect(() => {
-  console.log("start effect total");
-  total = product.price * product.quantity;
-  console.log("end effect total", total);
+  console.log("start effect salePrice");
+  salePrice.value = product.price * 0.9;
+  console.log("end effect salePrice", salePrice.value);
 });
 effect(() => {
-  console.log("start effect salePrice");
-  salePrice = product.price * 0.9;
-  console.log("end effect salePrice", salePrice);
+  console.log("start effect total");
+  total = salePrice.value * product.quantity;
+  console.log("end effect total", total);
 });
 
 console.log(
-  `Before updated total (should be 10) = ${total} salePrice (should be 4.5) = ${salePrice}`
+  `Before updated total (should be 9) = ${total} salePrice (should be 4.5) = ${salePrice.value}`
 );
 
 product.quantity = 3;
 console.log(
-  `After updated quantity, total (should be 15) = ${total} salePrice (should be 4.5) = ${salePrice}`
+  `After updated quantity, total (should be 13.5) = ${total} salePrice (should be 4.5) = ${salePrice.value}`
 );
 
 product.price = 10;
 console.log(
-  `After updated price, total (should be 30) = ${total} salePrice (should be 9) = ${salePrice}`
+  `After updated price, total (should be 27) = ${total} salePrice (should be 9) = ${salePrice.value}`
 );
 
 console.log("end");
